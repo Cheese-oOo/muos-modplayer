@@ -66,4 +66,4 @@ We support a bunch. If your favorite isn't here, blame the 90s.
 
 ## License (or, "The Legal Stuff You Won't Read")
 
-MIT License. Do whatever you want. Just don't blame us if your computer explodes.
+ GPL-3.0 license. Just don't blame us if your computer explodes.
