@@ -124,8 +124,21 @@ function parseModFileMetadata(filePath)
             allHaveNames = false
         end
     end
-    -- If any instrument is missing a name, use a fallback.
-    local instrumentsDisplay = allHaveNames and tostring(usedInstrumentCount) or "Data Unavailable"
+local instruments = {} -- Table to store instrument names
+for i = 1, instrumentCountFixed do
+    local recordBase = 20 + (i - 1) * 30
+    local sampleName = data:sub(recordBase + 1, recordBase + 22)
+    sampleName = sampleName:gsub("%z", "") -- Remove null characters
+    sampleName = sampleName:match("^%s*(.-)%s*$") -- Trim whitespace
+
+    if sampleName ~= "" then
+        table.insert(instruments, sampleName)
+    end
+end
+
+-- Store the instrument names in metadata
+local instrumentsDisplay = #instruments > 0 and instruments or {"No Instruments Found"}
+
 
     -- Extract the pattern order table (128 bytes starting at offset 953)
     local patternOrder = {}
@@ -169,66 +182,75 @@ function parseModFileMetadata(filePath)
         end
     end
 
-    return {
-        songName = songNameMod,
-        author = author,
-        tracker = tracker,
-        instrumentCount = usedInstrumentCount,  -- Count of instruments with sample data.
-        sampleCount = usedInstrumentCount,        -- For MOD files, each instrument is a sample.
-        patternCount = patternCount,
-        channels = channels,
-        instruments = instrumentsDisplay         -- Either a count or "Data Unavailable"
-    }
+return {
+    songName = songNameMod,
+    author = author,
+    tracker = tracker,
+    tempo = "N/A",  -- Add default value
+    bpm = "N/A",    -- Add default value
+    instrumentCount = usedInstrumentCount,
+    sampleCount = usedInstrumentCount,
+    patternCount = patternCount,
+    channels = channels,
+    instruments = instrumentsDisplay
+}
 end
-
 -- Helper to read a little-endian 2-byte integer (if not already defined)
 local function readLE2(data, offset)
     local b1 = data:byte(offset) or 0
     local b2 = data:byte(offset + 1) or 0
     return b1 + b2 * 256
 end
+
+local function readLE4(data, offset)
+    local b1 = data:byte(offset) or 0
+    local b2 = data:byte(offset+1) or 0
+    local b3 = data:byte(offset+2) or 0
+    local b4 = data:byte(offset+3) or 0
+    return b1 + b2*256 + b3*65536 + b4*16777216
+end
+
 function parseITFileMetadata(filePath)
     local data, size = love.filesystem.read(filePath)
-    if not data then
-        return nil, "Failed to read file"
-    end
+    if not data then return nil, "Failed to read file" end
 
-    if size < 192 then
-        return nil, "File too short to be a valid IT file"
-    end
+    if size < 192 then return nil, "File too short" end
+    if data:sub(1, 4) ~= "IMPM" then return nil, "Not valid IT file" end
 
-    -- Verify file signature ("IMPM") to confirm it is an IT file.
-    local id = data:sub(1, 4)
-    if id ~= "IMPM" then
-        return nil, "Not a valid IT file"
-    end
-
-    -- Extract the song name (bytes 5 to 30) and trim null characters.
-    local songName = data:sub(5, 30):match("^[^%z]+") or "Unnamed"
-
-    -- Read a little-endian word for instrument count at offset 35.
+    -- Initialize names table
+    local names = {}
+    
+    -- Basic headers
+    local songName = data:sub(5, 30):gsub("%z", ""):match("^%s*(.-)%s*$") or "Unnamed"
+    local tempo = data:byte(42)
+    local bpm = data:byte(43)
     local instrumentCount = readLE2(data, 35)
-    if instrumentCount == 0 then
-        instrumentCount = "N/A"
-    end
-
-    -- Similarly, read the sample count and pattern count.
     local sampleCount = readLE2(data, 37)
     local patternCount = readLE2(data, 39)
 
+    -- Instrument parsing code
+    if instrumentCount > 0 then
+        -- ... (your existing instrument parsing code that adds to names table)
+    end
+
+    -- Sample parsing fallback
+    if #names == 0 and sampleCount > 0 then
+        -- ... (your existing sample parsing code that adds to names table)
+    end
+
     return {
         songName = songName,
-        tracker = "Impulse Tracker",  -- Default tracker value for IT files.
+        tracker = "Impulse Tracker",
+        tempo = tempo or "N/A",
+        bpm = bpm or "N/A",
+        message = songMessage,
         instrumentCount = instrumentCount,
         sampleCount = sampleCount,
         patternCount = patternCount,
-        channels = "N/A"              -- Channel count isn't analyzed.
+        channels = "N/A",
+        instruments = #names > 0 and names or {"No Instruments/Samples Found"}
     }
-end
-
-
-
--- Function to switch themes
+end-- Function to switch themes
 function cycleTheme()
     currentThemeIndex = (currentThemeIndex % #themes) + 1
     updateThemeColors()
@@ -284,12 +306,13 @@ function loadTrack(index)
         end
 
         local baseFileName = files[index]:match("(.+)%..+$") or "Unknown File"
-        -- Add the file name as a separate metadata field.
+        
+        -- Add the file name as a separate metadata field
         if modMetaData then
             modMetaData.filename = baseFileName
         end
 
-        -- Use the file name plus embedded title for Now Playing text.
+        -- Use the file name plus embedded title for Now Playing text
         if modMetaData and modMetaData.songName and modMetaData.songName ~= "No Title" then
             songTitle = baseFileName .. " (" .. modMetaData.songName .. ")"
         else
@@ -304,7 +327,6 @@ function loadTrack(index)
         modMetaData = nil
     end
 end
-
 
 function navigateBack()
     if currentDirectory ~= "content" then
@@ -456,7 +478,7 @@ function love.draw()
     -- Clear the screen with the background color based on the current theme
     love.graphics.clear(gameboyBackgroundColor)
 
-    -- Draw the header with "ModPlayer by Cheese" at the top, adjusting for theme
+    -- Draw the header with "ModPlayer" at the top, adjusting for theme
     love.graphics.setColor(textColor)
     love.graphics.setFont(font)
     -- Draw the header in yellow
@@ -581,10 +603,6 @@ if modMetaData then
     -- Note: textColor is assumed to be a table with three numbers: {r, g, b}
     love.graphics.setColor(textColor[1], textColor[2], textColor[3], metaTextAlpha)
     local metaText =
- love.graphics.setFont(font)  -- Use the main font for metadata.
-    love.graphics.setColor(textColor)
-    local metaText =
-        "Filename: " .. (modMetaData.filename or "Unknown File") .. "\n" ..
         "Song: " .. modMetaData.songName .. "\n" ..
         "Tracker: " .. modMetaData.tracker .. "\n" ..
         "Instruments: " .. modMetaData.instrumentCount .. "\n" ..
@@ -593,4 +611,19 @@ if modMetaData then
         "Channels: " .. modMetaData.channels
     love.graphics.print(metaText, 375, 150)
 end
+if modMetaData and type(modMetaData.instruments) == "table" then
+    love.graphics.setFont(smallFont)
+    love.graphics.setColor(textColor)
+    local instrumentsX = 600 -- Set X-coordinate for displaying instruments
+    local instrumentsY = 150 -- Starting Y-coordinate
+    local lineHeight = 20 -- Line height for instrument names
+
+    -- Display instruments one by one
+    for i, instrumentName in ipairs(modMetaData.instruments) do
+        love.graphics.print(i .. ": " .. instrumentName, instrumentsX, instrumentsY + (i - 1) * lineHeight)
+    end
+
+end
+
+
 end
