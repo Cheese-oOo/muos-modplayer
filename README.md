@@ -5,7 +5,14 @@ Welcome to ModPlayer, your retro-style music player for classic tracker formats.
 ---
 
 ## 🛠️ Installation Instructions
+Aimed at MUOS
+- Make ModPlayer Dir in Apllications folder
+- Copy all files
+- Go to Apps in MuOS
+- Profit
 
+  Anything other systems
+  
 1. Install [LÖVE 2D](https://love2d.org/), the lightweight game framework used for ModPlayer.
 2. Place ModPlayer in your preferred directory.
 3. Launch the program with `love .` in the ModPlayer folder to start enjoying your music collection.
