@@ -250,7 +250,243 @@ function parseITFileMetadata(filePath)
         channels = "N/A",
         instruments = #names > 0 and names or {"No Instruments/Samples Found"}
     }
-end-- Function to switch themes
+end
+
+function parseXMFileMetadata(filePath)
+    local data, size = love.filesystem.read(filePath)
+    if not data or size < 60 then
+        return nil, "File too short to be a valid XM file"
+    end
+
+    -- Validate XM file signature
+    if data:sub(1, 17) ~= "Extended Module:" then
+        return nil, "Not a valid XM file"
+    end
+
+    -- Extract song name (bytes 18 to 37)
+    local songName = data:sub(18, 37):match("^[^%z]+") or "Unnamed"
+
+    -- Extract tracker name (bytes 38 to 57)
+    local trackerName = data:sub(38, 57):match("^[^%z]+") or "Unknown Tracker"
+
+    -- Read number of patterns (byte 59)
+    local patternCount = data:byte(59) or 0
+
+    -- Read number of channels (byte 60)
+    local channelCount = data:byte(60) or 0
+
+    -- Return extracted metadata
+    return {
+        songName = songName,
+        tracker = trackerName,
+        instrumentCount = "Unknown", -- Not available in the header
+        sampleCount = "Unknown",     -- Not available in the header
+        patternCount = patternCount,
+        channels = channelCount
+    }
+    end
+function parseS3MFileMetadata(filePath)
+    local data, size = love.filesystem.read(filePath)
+    if not data or size < 96 then
+        return nil, "File too short to be a valid S3M file"
+    end
+
+    if data:sub(1, 4) ~= "SCRM" then
+        return nil, "Not a valid S3M file"
+    end
+
+    local songName = data:sub(5, 28):match("^[^%z]+") or "Unnamed"
+    local instrumentCount = data:byte(30) or 0
+    local patternCount = data:byte(32) or 0
+
+    return {
+        songName = songName,
+        author = "Unknown",
+        tracker = "Scream Tracker",
+        instrumentCount = instrumentCount,
+        sampleCount = "N/A",
+        patternCount = patternCount,
+        channels = "N/A"
+    }
+end
+function parseMTMFileMetadata(filePath)
+    local data, size = love.filesystem.read(filePath)
+    if not data or size < 100 then
+        return nil, "File too short to be a valid MTM file"
+    end
+
+    if data:sub(1, 4) ~= "MTM " then
+        return nil, "Not a valid MTM file"
+    end
+
+    local songName = data:sub(5, 28):match("^[^%z]+") or "Unnamed"
+    local instrumentCount = data:byte(29) or 0
+    local patternCount = data:byte(30) or 0
+    local channels = data:byte(31) or "N/A"
+
+    return {
+        songName = songName,
+        author = "Unknown",
+        tracker = "MultiTracker",
+        instrumentCount = instrumentCount,
+        sampleCount = "N/A",
+        patternCount = patternCount,
+        channels = channels
+    }
+end
+function parseAMFFileMetadata(filePath)
+    local data, size = love.filesystem.read(filePath)
+    if not data or size < 50 then
+        return nil, "File too short to be a valid AMF file"
+    end
+
+    local signature = data:sub(1, 4)
+    if signature ~= "AMF0" and signature ~= "AMF1" then
+        return nil, "Not a valid AMF file"
+    end
+
+    local songName = data:sub(5, 36):match("^[^%z]+") or "Unnamed"
+    local tracker = "Advanced Music Format"
+    local patternCount = data:byte(37) or 0
+
+    return {
+        songName = songName,
+        author = "Unknown",
+        tracker = tracker,
+        instrumentCount = "N/A",
+        sampleCount = "N/A",
+        patternCount = patternCount,
+        channels = "N/A"
+    }
+end
+function parseDBMFileMetadata(filePath)
+    local data, size = love.filesystem.read(filePath)
+    if not data or size < 60 then
+        return nil, "File too short to be a valid DBM file"
+    end
+
+    local signature = data:sub(1, 4)
+    if signature ~= "DBM0" then
+        return nil, "Not a valid DBM file"
+    end
+
+    local songName = data:sub(5, 36):match("^[^%z]+") or "Unnamed"
+    local tracker = "DigiBooster Pro"
+    local patternCount = data:byte(37) or 0
+    local instrumentCount = data:byte(38) or 0
+
+    return {
+        songName = songName,
+        author = "Unknown",
+        tracker = tracker,
+        instrumentCount = instrumentCount,
+        sampleCount = "N/A",
+        patternCount = patternCount,
+        channels = "N/A"
+    }
+end
+function parseDSMFileMetadata(filePath)
+    local data, size = love.filesystem.read(filePath)
+    if not data or size < 60 then
+        return nil, "File too short to be a valid DSM file"
+    end
+
+    if data:sub(1, 4) ~= "DSMF" then
+        return nil, "Not a valid DSM file"
+    end
+
+    local songName = data:sub(5, 28):match("^[^%z]+") or "Unnamed"
+    local tracker = "Digital Sound Module"
+    local instrumentCount = data:byte(29) or 0
+    local patternCount = data:byte(30) or 0
+
+    return {
+        songName = songName,
+        author = "Unknown",
+        tracker = tracker,
+        instrumentCount = instrumentCount,
+        sampleCount = "N/A",
+        patternCount = patternCount,
+        channels = "N/A"
+    }
+end
+function parseOKTFileMetadata(filePath)
+    local data, size = love.filesystem.read(filePath)
+    if not data or size < 40 then
+        return nil, "File too short to be a valid OKT file"
+    end
+
+    if data:sub(1, 8) ~= "OKTASONG" then
+        return nil, "Not a valid OKT file"
+    end
+
+    local songName = "Unnamed" -- OKT files often don’t have a song name
+    local tracker = "Oktalyzer"
+    local patternCount = data:byte(9) or 0
+    local instrumentCount = data:byte(10) or 0
+
+    return {
+        songName = songName,
+        author = "Unknown",
+        tracker = tracker,
+        instrumentCount = instrumentCount,
+        sampleCount = "N/A",
+        patternCount = patternCount,
+        channels = "N/A"
+    }
+end
+function parsePSMFileMetadata(filePath)
+    local data, size = love.filesystem.read(filePath)
+    if not data or size < 40 then
+        return nil, "File too short to be a valid PSM file"
+    end
+
+    if data:sub(1, 4) ~= "PSM " then
+        return nil, "Not a valid PSM file"
+    end
+
+    local songName = data:sub(5, 36):match("^[^%z]+") or "Unnamed"
+    local tracker = "ProTracker Studio"
+    local patternCount = data:byte(37) or 0
+    local instrumentCount = data:byte(38) or 0
+
+    return {
+        songName = songName,
+        author = "Unknown",
+        tracker = tracker,
+        instrumentCount = instrumentCount,
+        sampleCount = "N/A",
+        patternCount = patternCount,
+        channels = "N/A"
+    }
+end
+function parseULTFileMetadata(filePath)
+    local data, size = love.filesystem.read(filePath)
+    if not data or size < 60 then
+        return nil, "File too short to be a valid ULT file"
+    end
+
+    if data:sub(1, 4) ~= "MAS_UTrack_V00" then
+        return nil, "Not a valid ULT file"
+    end
+
+    local songName = data:sub(5, 36):match("^[^%z]+") or "Unnamed"
+    local tracker = "UltraTracker"
+    local patternCount = data:byte(37) or 0
+    local instrumentCount = data:byte(38) or 0
+
+    return {
+        songName = songName,
+        author = "Unknown",
+        tracker = tracker,
+        instrumentCount = instrumentCount,
+        sampleCount = "N/A",
+        patternCount = patternCount,
+        channels = "N/A"
+    }
+end
+
+-- Function to switch themes
 function cycleTheme()
     currentThemeIndex = (currentThemeIndex % #themes) + 1
     updateThemeColors()
@@ -290,33 +526,38 @@ function loadTrack(index)
         currentSong:setLooping(true)
         songDuration = currentSong:getDuration()
         songTime = 0
+        songTitle = files[index]:match("(.+)%..+$")
 
+        -- Call the corresponding parser based on file extension
         if extension == ".mod" then
             modMetaData, err = parseModFileMetadata(trackPath)
-            if not modMetaData then
-                print("Error parsing MOD metadata: " .. err)
-            end
         elseif extension == ".it" then
             modMetaData, err = parseITFileMetadata(trackPath)
-            if not modMetaData then
-                print("Error parsing IT metadata: " .. err)
-            end
+        elseif extension == ".xm" then
+            modMetaData, err = parseXMFileMetadata(trackPath)
+        elseif extension == ".s3m" then
+            modMetaData, err = parseS3MFileMetadata(trackPath)
+        elseif extension == ".mtm" then
+            modMetaData, err = parseMTMFileMetadata(trackPath)
+        elseif extension == ".amf" then
+            modMetaData, err = parseAMFFileMetadata(trackPath)
+        elseif extension == ".dbm" then
+            modMetaData, err = parseDBMFileMetadata(trackPath)
+        elseif extension == ".dsm" then
+            modMetaData, err = parseDSMFileMetadata(trackPath)
+        elseif extension == ".okt" then
+            modMetaData, err = parseOKTFileMetadata(trackPath)
+        elseif extension == ".psm" then
+            modMetaData, err = parsePSMFileMetadata(trackPath)
+        elseif extension == ".ult" then
+            modMetaData, err = parseULTFileMetadata(trackPath)
         else
             modMetaData = nil
+            err = "Unsupported file format"
         end
 
-        local baseFileName = files[index]:match("(.+)%..+$") or "Unknown File"
-        
-        -- Add the file name as a separate metadata field
-        if modMetaData then
-            modMetaData.filename = baseFileName
-        end
-
-        -- Use the file name plus embedded title for Now Playing text
-        if modMetaData and modMetaData.songName and modMetaData.songName ~= "No Title" then
-            songTitle = baseFileName .. " (" .. modMetaData.songName .. ")"
-        else
-            songTitle = baseFileName
+        if not modMetaData then
+            print("Error parsing metadata: " .. err)
         end
     else
         print("Error loading track: " .. trackPath)
@@ -327,7 +568,6 @@ function loadTrack(index)
         modMetaData = nil
     end
 end
-
 function navigateBack()
     if currentDirectory ~= "content" then
         -- Get the parent directory (without relying on `match()` or `()`):
@@ -343,9 +583,9 @@ local colorCycleSpeed = 2  -- Speed of the color cycle
 
 function love.load()
     love.window.setMode(800, 600)
-    font = love.graphics.newFont("assets/retro.otf", 20)    -- Load retro font at size 20
+    font = love.graphics.newFont("assets/retro.otf", 22)    -- Load retro font at size 22
     love.graphics.setFont(font)
-    smallFont = love.graphics.newFont("assets/retro.otf", 14) -- Load retro font at size 14
+    smallFont = love.graphics.newFont("assets/retro.otf", 16) -- Load retro font at size 16
     loadFiles()
     currentTrackIndex = 1
     songTitle = "No Track Selected"
@@ -583,7 +823,7 @@ love.graphics.rectangle("fill", browserX, browserY, browserWidth, browserHeight,
     love.graphics.print("Now Playing: " .. (songTitle or "None"), 10, 550)
 
     -- Song progress display
-    love.graphics.print(formatTime(songTime) .. " / " .. formatTime(songDuration), 665, 550)
+    love.graphics.print(formatTime(songTime) .. " / " .. formatTime(songDuration), 650, 550)
 
   if currentSong and songDuration > 0 then
     local progress = songTime / songDuration
@@ -599,9 +839,10 @@ love.graphics.rectangle("fill", browserX, browserY, browserWidth, browserHeight,
 end
     -- Display metadata info, etc.
 if modMetaData then
-    love.graphics.setFont(font)  -- using the main font for meta text now
+      love.graphics.setFont(font)
+
     -- Note: textColor is assumed to be a table with three numbers: {r, g, b}
-    love.graphics.setColor(textColor[1], textColor[2], textColor[3], metaTextAlpha)
+ love.graphics.setColor(highlightColor)
     local metaText =
         "Song: " .. modMetaData.songName .. "\n" ..
         "Tracker: " .. modMetaData.tracker .. "\n" ..
@@ -609,13 +850,13 @@ if modMetaData then
         "Samples: " .. modMetaData.sampleCount .. "\n" ..
         "Patterns: " .. modMetaData.patternCount .. "\n" ..
         "Channels: " .. modMetaData.channels
-    love.graphics.print(metaText, 375, 150)
+    love.graphics.print(metaText, 375, 45)
 end
 if modMetaData and type(modMetaData.instruments) == "table" then
-    love.graphics.setFont(smallFont)
+    love.graphics.setFont(font)
     love.graphics.setColor(textColor)
-    local instrumentsX = 600 -- Set X-coordinate for displaying instruments
-    local instrumentsY = 150 -- Starting Y-coordinate
+    local instrumentsX = 375 -- Set X-coordinate for displaying instruments
+    local instrumentsY = 230 -- Starting Y-coordinate
     local lineHeight = 20 -- Line height for instrument names
 
     -- Display instruments one by one
