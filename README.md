@@ -1,62 +1,70 @@
 # ModPlayer by Cheese 🎵
 
-Welcome to ModPlayer, your retro-style music player for classic tracker formats. It supports a wide range of files like `.mod`, `.xm`, `.s3m`, `.it`, and more, offering a simple, focused way to experience and organize your music.
+ModPlayer is your gateway to experiencing classic tracker music formats on retro handheld devices. Supporting a variety of file types, including `.mod`, `.xm`, `.s3m`, `.it`, and more, it offers portability and simplicity for tracker music enthusiasts.
 
 ---
 
 ## 🛠️ Installation Instructions
-Aimed at MUOS
-- Make ModPlayer Dir in Apllications folder
-- Copy all files
-- Go to Apps in MuOS
-- Profit
 
-  Anything other systems
-  
-1. Install [LÖVE 2D](https://love2d.org/), the lightweight game framework used for ModPlayer.
-2. Place ModPlayer in your preferred directory.
-3. Launch the program with `love .` in the ModPlayer folder to start enjoying your music collection.
+### For MuOS
+1. Create a ModPlayer directory in the **Applications** folder.
+2. Copy all files from this repository into the new directory.
+3. Open the **Apps** section in MuOS and locate ModPlayer.
+4. Add your `.mod` files to the `content` folder.
+5. You're ready to play your music!
+
+### For Other Systems
+1. Install [LÖVE 2D](https://love2d.org/), the lightweight game framework powering ModPlayer.
+2. Place the ModPlayer files in your chosen directory.
+3. Run the application using `love .` within the ModPlayer folder.
+
+---
+
+## 📝 Still To Do
+- Test compatibility for all supported mod formats.
+- Improve on-screen shortcut labels (current button functionality works but can be more intuitive in the next update).
+- Enhance header extraction across all formats (currently complete for `.mod`) to display instruments in the interface.
 
 ---
 
 ## 🚀 Features
 
-- **Format Compatibility**: Supports popular tracker formats, including `.mod`, `.xm`, `.s3m`, `.it`, `.mtm`, `.amf`, `.dbm`, `.dsm`, `.okt`, `.psm`, and `.ult`.
-- **Detailed Metadata**: Displays song details, patterns, and instruments or samples.
-- **Dynamic Themes**: Choose from multiple themes like Light, Dark, Red, Blue, and Green to match your visual preference.
+- **Wide Format Support**: Play popular tracker formats including `.mod`, `.xm`, `.s3m`, `.it`, `.mtm`, `.amf`, `.dbm`, `.dsm`, `.okt`, `.psm`, and `.ult`.
+- **Metadata Display**: View song details such as instruments, samples, patterns, and tracker information.
+- **Dynamic Themes**: Customize the interface with themes like Light, Dark, Red, Blue, and Green.
 - **Keyboard Shortcuts**:
   - `A` - Play
   - `B` - Pause
-  - `R` - Randomize
-  - `T` - Change theme
-  - `Backspace` - Navigate back
+  - `R` - Randomize tracks
+  - `T` - Change themes
+  - `Backspace` - Navigate to the previous directory
   - `Select` - Quit the application
 
 ---
 
-## 🔧 Customization and Interface
+## 🔧 Interface Highlights
 
-ModPlayer offers straightforward controls, progress bars for track timing, and a file browser for smooth navigation through directories. It aims to provide both functionality and simplicity in a retro-style interface.
-
----
-
-## ⚡ Notes and Tips
-
-1. **Screen Goes Black?**
-   Double-check that themes are correctly loaded and the files exist in the expected directory.
-
-2. **UTF-8 Errors?**
-   Invalid characters are sanitized during processing, but you might need to check your file names or metadata for unsupported symbols.
-
-3. **Missing Features?**
-   Feel free to explore the code or suggest improvements—you can always tweak and build on top of ModPlayer.
+ModPlayer features a simple interface with organized file browsing, real-time progress bars for playback, and detailed metadata. It’s designed to make exploring and playing tracker music straightforward and enjoyable.
 
 ---
 
-## 📖 About the Project
+## ⚡ Troubleshooting Tips
 
-ModPlayer is inspired by the tracker music scene, combining simplicity and versatility to bring classic formats into the modern day. Whether you're revisiting old modules or exploring the world of chiptune and retro music, ModPlayer is here to help.
+1. **Screen Goes Black?**  
+   Verify that themes are properly initialized and that files exist in the correct directory.
+
+2. **UTF-8 Decoding Errors?**  
+   Ensure filenames and metadata are UTF-8 compatible. Invalid characters are sanitized during processing.
+
+3. **Missing Features?**  
+   Feel free to submit feedback or suggestions for features you’d like to see in future versions. ModPlayer is open to improvement!
 
 ---
 
-Enjoy your music! Let me know if you have feedback or ideas for new features.
+## 🎵 About ModPlayer
+
+Inspired by the legacy of tracker music, ModPlayer combines portability and simplicity to bring classic formats into modern devices. Whether revisiting old modules or discovering retro chiptune music, ModPlayer is designed for you.
+
+---
+
+Enjoy exploring tracker music with ModPlayer! Feedback and ideas are always welcome.
