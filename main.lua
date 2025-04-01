@@ -1,6 +1,7 @@
 -- The brain of our operation - keeping track of what's what
 local currentTrackIndex = 1
 local isPlaying = false
+local isLoading = false  -- New loading state to prevent concurrent loading
 local files = {}
 local directories = {}
 local currentSong = nil
@@ -733,8 +734,19 @@ function loadFiles()
 end
 
 function loadTrack(index)
-    if currentSong and currentSong:isPlaying() then
-        currentSong:stop()
+    -- Prevent loading if already loading a track
+    if isLoading then return end
+    
+    -- Set loading state
+    isLoading = true
+    
+    -- Properly release the old audio source if it exists
+    if currentSong then
+        if currentSong:isPlaying() then
+            currentSong:stop()
+        end
+        currentSong:release()
+        currentSong = nil
     end
 
     local trackPath = currentDirectory .. "/" .. files[index]
@@ -787,6 +799,9 @@ function loadTrack(index)
         songTitle = "Error Loading"
         modMetaData = nil
     end
+    
+    -- Reset loading state
+    isLoading = false
 end
 
 function navigateBack()
@@ -848,17 +863,29 @@ function love.update(dt)
         if metaTextAlpha < 1 then
             metaTextAlpha = math.min(metaTextAlpha + dt / metaTextFadeTime, 1)
         end
+    else
+        -- Reset meta text alpha when not playing
+        metaTextAlpha = 0
     end
+
     -- Increase the play bar alpha gradually over playBarFadeTime seconds.
     if playBarAlpha < 1 then
         playBarAlpha = math.min(playBarAlpha + dt / playBarFadeTime, 1)
     end
     
+    -- Handle metaBoxAlpha transitions
     if currentSong and isPlaying then
         metaBoxAlpha = math.min(metaBoxAlpha + dt / metaBoxFadeTime, 1)
     else
         metaBoxAlpha = math.max(metaBoxAlpha - dt / metaBoxFadeTime, 0)
+        -- Reset instrument scroll when stopping
+        if not isPlaying then
+            instrumentScrollOffset = 0
+            instrumentScrollDirection = 1
+            instrumentScrollPause = 0
+        end
     end
+
     -- Update the color cycle timer
     colorCycleTimer = colorCycleTimer + dt * colorCycleSpeed
     if colorCycleTimer > 1 then colorCycleTimer = colorCycleTimer - 1 end  -- Reset after a full cycle
@@ -866,21 +893,49 @@ end
 
 function love.keypressed(key)
     if key == "space" or key == "a" then
-        -- Toggle play/pause
-        if currentSong then
-            if isPlaying then
-                currentSong:stop()
+        -- Toggle play/pause with safety checks
+        if currentSong and not isLoading then
+            local success, err = pcall(function()
+                if isPlaying then
+                    if currentSong:isPlaying() then
+                        currentSong:stop()
+                    end
+                    isPlaying = false
+                else
+                    if not currentSong:isPlaying() then
+                        currentSong:play()
+                        isPlaying = true
+                    end
+                end
+            end)
+            if not success then
+                -- If there's an error, clean up and reset state
+                if currentSong then
+                    currentSong:release()
+                    currentSong = nil
+                end
                 isPlaying = false
-            else
-                currentSong:play()
-                isPlaying = true
+                print("Error toggling playback: " .. tostring(err))
             end
         end
     elseif key == "b" then
-        -- Stop playing
-        if currentSong and isPlaying then
-            currentSong:stop()
-            isPlaying = false
+        -- Stop playing with safety checks
+        if currentSong and isPlaying and not isLoading then
+            local success, err = pcall(function()
+                if currentSong:isPlaying() then
+                    currentSong:stop()
+                end
+                isPlaying = false
+            end)
+            if not success then
+                -- If there's an error, clean up and reset state
+                if currentSong then
+                    currentSong:release()
+                    currentSong = nil
+                end
+                isPlaying = false
+                print("Error stopping playback: " .. tostring(err))
+            end
         end
     elseif key == "up" then
         -- Navigate up
@@ -904,11 +959,26 @@ function love.keypressed(key)
             local dirName = directories[currentTrackIndex]
             currentDirectory = currentDirectory .. "/" .. dirName
             loadFiles()
-        elseif currentTrackIndex > #directories and #files > 0 then
+        elseif currentTrackIndex > #directories and #files > 0 and not isLoading then
+            -- Stop current song before loading new one
+            if currentSong then
+                if currentSong:isPlaying() then
+                    currentSong:stop()
+                end
+                currentSong:release()
+                currentSong = nil
+                isPlaying = false
+            end
             loadTrack(currentTrackIndex - #directories)
             if currentSong then
-                currentSong:play()
-                isPlaying = true
+                local success, err = pcall(function()
+                    currentSong:play()
+                    isPlaying = true
+                end)
+                if not success then
+                    print("Error playing new track: " .. tostring(err))
+                    isPlaying = false
+                end
             end
         end
     elseif key == "backspace" then
@@ -922,15 +992,31 @@ function love.keypressed(key)
         cycleTheme()
     elseif key == "r" then
         -- Randomize: select a random track and play it
-        if #files > 0 then
+        if #files > 0 and not isLoading then
+            -- Stop current song before loading new one
+            if currentSong then
+                if currentSong:isPlaying() then
+                    currentSong:stop()
+                end
+                currentSong:release()
+                currentSong = nil
+                isPlaying = false
+            end
+            
             local randomIndex = math.random(1, #files)
             loadTrack(randomIndex)
 
             if currentSong then
-                currentSong:play()
-                isPlaying = true
-                -- Update current track index to highlight the selected file in the browser
-                currentTrackIndex = randomIndex + #directories
+                local success, err = pcall(function()
+                    currentSong:play()
+                    isPlaying = true
+                    -- Update current track index to highlight the selected file in the browser
+                    currentTrackIndex = randomIndex + #directories
+                end)
+                if not success then
+                    print("Error playing random track: " .. tostring(err))
+                    isPlaying = false
+                end
             end
 
             -- Ensure the browser scrolls to the selected file
@@ -1296,5 +1382,16 @@ function love.draw()
         -- Add subtle border to match other UI elements
         love.graphics.setColor(highlightColor[1], highlightColor[2], highlightColor[3], UI.borderOpacity)
         love.graphics.rectangle("line", UI.margin, barY, UI.width - (UI.margin * 2), UI.progressBarHeight, 5, 5)
+    end
+end
+
+function love.quit()
+    -- Clean up audio resources
+    if currentSong then
+        if currentSong:isPlaying() then
+            currentSong:stop()
+        end
+        currentSong:release()
+        currentSong = nil
     end
 end
